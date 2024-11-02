@@ -3,7 +3,7 @@ import time
 from xml.etree import ElementTree
 
 
-def parse_cisjr(filename: str) -> {str: [(str, str, str, [str])]}:
+def parse_cisjr(filename: str) -> dict[str, list[tuple[str, int, int, list[str]]]]:
     connection = {}
     with open(filename) as file1:
         tree = ElementTree.parse(file1)
@@ -67,7 +67,7 @@ def parse_cisjr(filename: str) -> {str: [(str, str, str, [str])]}:
     return connection
 
 
-def parse_cisjr_folder(folder: str) -> {str: [(str, str, str, [str])]}:
+def parse_cisjr_folder(folder: str) -> dict[str, list[tuple[str, int, int, list[str]]]]:
     connections = {}
     for filename in os.listdir(folder):
         partial_connections = parse_cisjr(folder + os.sep + filename)
