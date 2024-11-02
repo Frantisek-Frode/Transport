@@ -1,0 +1,1 @@
+The aim of this project is to take timetables of public transport, and for a given starting point find the fastest way to travel to any other point.
