@@ -52,7 +52,7 @@ def parse_cisjr(filename: str) -> dict[str, list[tuple[str, int, int, list[str]]
                 station_name = scheduled_stop_point2_name[sched_stop]
                 if order + 1 in servicePattern[pattern_id]:
                     next_pass_point = servicePattern[pattern_id][order+1]
-                    next_station_name = scheduled_stop_point2_name[journeyStopPoint2ScheduledStopPoint[passPoint][0]]
+                    next_station_name = scheduled_stop_point2_name[journeyStopPoint2ScheduledStopPoint[next_pass_point][0]]
                     _, arrival, _ = passes[passTimeId][next_pass_point]
                     arrival = time.strptime(arrival, "%H:%M:%S")
                     departure = time.strptime(departure, "%H:%M:%S")

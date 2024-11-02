@@ -1,6 +1,7 @@
 import igraph as ig
+import datetime
 
-LENGTH_OF_DAY = 24*60
+LENGTH_OF_DAY = 24*60*60
 
 class Network:
 	def __init__(self):
@@ -73,9 +74,9 @@ class Network:
 		res: list[list[int]] = self._graph.get_shortest_paths(self._initials[start], ends, output="epath", weights=self._graph.es["weight"])
 
 		for vert, path in zip(ends, res):
-			print(self._graph.vs[vert]["label"], end=": ")
 			d = 0
 			for e in path:
-				print(self._graph.es[e]["label"], end=' ')
+				# print(self._graph.es[e]["label"], end=' ')
 				d += self._graph.es[e]["weight"]
-			print(d)
+			print(f'{d//3600:02d}:{(d//60)%60:02d}', end=' ')
+			print('|', self._graph.vs[vert]["label"])
