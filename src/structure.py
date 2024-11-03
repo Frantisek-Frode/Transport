@@ -53,6 +53,15 @@ class Network:
 		self._graph.add_edge(i1, i2, weight=(arrival - departure), label=from_station+"->"+to_station)
 
 
+	def add_segments(
+			self,
+			edges = list[tuple[str, int, str, int]]
+	):
+		indexes = [(self._get_index_or_create(e[0], e[1]), self._get_index_or_create(e[1], e[2])) for e in edges]
+		labels = [e[0]+"->"+e[2] for e in edges]
+		weights = [e[3] - e[1] for e in edges]
+		self._graph.add_edges(indexes, attributes={"weight": weights, "label": labels})
+
 	def compute_waiting_edges(self):
 		for place in list(self._times_at_place.keys()):
 			times = self._times_at_place[place]
@@ -64,7 +73,20 @@ class Network:
 				i2 = self._get_index_or_create(place, times[i])
 				dt = (times[i] - times[i - 1]) % LENGTH_OF_DAY
 				self._graph.add_edge(i1, i2, weight=dt, label=';')
-	
+
+
+	def distance(self, start: str, end: str):
+		if start not in self._initials:
+			raise ValueError("Invalid start:", start)
+		if end not in self._terminals:
+			raise ValueError("Invalid end:", end)
+		res: list[int] = self._graph.get_shortest_path(self._initials[start], self._terminals[end], output="epath", weights=self._graph.es["weight"])
+		d = 0
+		for e in res:
+			print(self._graph.es[e]["label"], end=' ')
+			d += self._graph.es[e]["weight"]
+		print(f'{d//3600:02d}:{(d//60)%60:02d}', end=' ')
+
 
 	def distances(self, start: str):
 		if start not in self._initials:

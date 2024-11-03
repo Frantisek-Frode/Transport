@@ -1,11 +1,13 @@
+import multiprocessing
 import os
 import time
+from multiprocessing.pool import ThreadPool
 from xml.etree import ElementTree
 
 
 def parse_cisjr(filename: str) -> dict[str, list[tuple[str, int, int, list[str]]]]:
     connection = {}
-    with open(filename) as file1:
+    with open(filename, "r") as file1:
         tree = ElementTree.parse(file1)
         root = tree.getroot()
         scheduled_stop_point2_name = {}
@@ -13,38 +15,38 @@ def parse_cisjr(filename: str) -> dict[str, list[tuple[str, int, int, list[str]]
         journeyStopPoint2ScheduledStopPoint = {}
         lineNames = []
         servicePattern = {}
-        for dataObj in root.findall("{http://www.netex.org.uk/netex}dataObjects"):
-            for compositeFrame in dataObj.findall("{http://www.netex.org.uk/netex}CompositeFrame"):
-                for frames in compositeFrame.findall("{http://www.netex.org.uk/netex}frames"):
-                    for serviceJourney in frames.findall("{http://www.netex.org.uk/netex}TimetableFrame/"
-                                                         "{http://www.netex.org.uk/netex}vehicleJourneys/"
-                                                         "{http://www.netex.org.uk/netex}ServiceJourney"):
-                        servicePatterRef = serviceJourney.find("{http://www.netex.org.uk/netex}ServiceJourneyPatternRef").get("ref")
-                        for passingTimes in serviceJourney.findall("{http://www.netex.org.uk/netex}passingTimes"):
-                            passes[passingTimes.get("id")] = {}
-                            for passingTime in passingTimes.findall("{http://www.netex.org.uk/netex}TimetabledPassingTime"):
-                                passes[passingTimes.get("id")][passingTime.find("{http://www.netex.org.uk/netex}StopPointInJourneyPatternRef").get("ref")] = (
-                                    servicePatterRef,
-                                    passingTime.findtext("{http://www.netex.org.uk/netex}ArrivalTime"),
-                                    passingTime.findtext("{http://www.netex.org.uk/netex}DepartureTime"),
-                                )
-                    for journeyPattern in frames.findall("{http://www.netex.org.uk/netex}ServiceFrame/"
-                                                         "{http://www.netex.org.uk/netex}journeyPatterns/"
-                                                         "{http://www.netex.org.uk/netex}ServiceJourneyPattern"):
-                        pattern_id = journeyPattern.get("id")
-                        servicePattern[pattern_id] = {}
-                        for stopPoint in journeyPattern.findall("{http://www.netex.org.uk/netex}pointsInSequence/"
-                                                                "{http://www.netex.org.uk/netex}StopPointInJourneyPattern"):
-                            servicePattern[pattern_id][int(stopPoint.get("order"))] = stopPoint.get("id")
-                            journeyStopPoint2ScheduledStopPoint[stopPoint.get("id")] = (stopPoint.find("{http://www.netex.org.uk/netex}ScheduledStopPointRef").get("ref"), int(stopPoint.get("order")))
-                    for stopPoint in frames.findall("{http://www.netex.org.uk/netex}ServiceFrame/"
-                                                    "{http://www.netex.org.uk/netex}scheduledStopPoints/"
-                                                    "{http://www.netex.org.uk/netex}ScheduledStopPoint"):
-                        scheduled_stop_point2_name[stopPoint.get("id")] = stopPoint.findtext("{http://www.netex.org.uk/netex}Name")
-                    for stopPoint in frames.findall("{http://www.netex.org.uk/netex}ServiceFrame/"
-                                                    "{http://www.netex.org.uk/netex}lines/"
-                                                    "{http://www.netex.org.uk/netex}Line"):
-                        lineNames.append(stopPoint.findtext("{http://www.netex.org.uk/netex}Name"))
+        for frames in root.findall("{http://www.netex.org.uk/netex}dataObjects/"
+                                   "{http://www.netex.org.uk/netex}CompositeFrame/"
+                                   "{http://www.netex.org.uk/netex}frames"):
+            for serviceJourney in frames.findall("{http://www.netex.org.uk/netex}TimetableFrame/"
+                                                 "{http://www.netex.org.uk/netex}vehicleJourneys/"
+                                                 "{http://www.netex.org.uk/netex}ServiceJourney"):
+                servicePatterRef = serviceJourney.find("{http://www.netex.org.uk/netex}ServiceJourneyPatternRef").get("ref")
+                for passingTimes in serviceJourney.findall("{http://www.netex.org.uk/netex}passingTimes"):
+                    passes[passingTimes.get("id")] = {}
+                    for passingTime in passingTimes.findall("{http://www.netex.org.uk/netex}TimetabledPassingTime"):
+                        passes[passingTimes.get("id")][passingTime.find("{http://www.netex.org.uk/netex}StopPointInJourneyPatternRef").get("ref")] = (
+                            servicePatterRef,
+                            passingTime.findtext("{http://www.netex.org.uk/netex}ArrivalTime"),
+                            passingTime.findtext("{http://www.netex.org.uk/netex}DepartureTime"),
+                        )
+            for journeyPattern in frames.findall("{http://www.netex.org.uk/netex}ServiceFrame/"
+                                                 "{http://www.netex.org.uk/netex}journeyPatterns/"
+                                                 "{http://www.netex.org.uk/netex}ServiceJourneyPattern"):
+                pattern_id = journeyPattern.get("id")
+                servicePattern[pattern_id] = {}
+                for stopPoint in journeyPattern.findall("{http://www.netex.org.uk/netex}pointsInSequence/"
+                                                        "{http://www.netex.org.uk/netex}StopPointInJourneyPattern"):
+                    servicePattern[pattern_id][int(stopPoint.get("order"))] = stopPoint.get("id")
+                    journeyStopPoint2ScheduledStopPoint[stopPoint.get("id")] = (stopPoint.find("{http://www.netex.org.uk/netex}ScheduledStopPointRef").get("ref"), int(stopPoint.get("order")))
+            for stopPoint in frames.findall("{http://www.netex.org.uk/netex}ServiceFrame/"
+                                            "{http://www.netex.org.uk/netex}scheduledStopPoints/"
+                                            "{http://www.netex.org.uk/netex}ScheduledStopPoint"):
+                scheduled_stop_point2_name[stopPoint.get("id")] = stopPoint.findtext("{http://www.netex.org.uk/netex}Name")
+            for stopPoint in frames.findall("{http://www.netex.org.uk/netex}ServiceFrame/"
+                                            "{http://www.netex.org.uk/netex}lines/"
+                                            "{http://www.netex.org.uk/netex}Line"):
+                lineNames.append(stopPoint.findtext("{http://www.netex.org.uk/netex}Name"))
         for passTimeId in passes:
             for passPoint in passes[passTimeId]:
                 pattern_id, _, departure = passes[passTimeId][passPoint]
@@ -69,11 +71,18 @@ def parse_cisjr(filename: str) -> dict[str, list[tuple[str, int, int, list[str]]
 
 def parse_cisjr_folder(folder: str) -> dict[str, list[tuple[str, int, int, list[str]]]]:
     connections = {}
-    for filename in os.listdir(folder):
-        partial_connections = parse_cisjr(folder + os.sep + filename)
+    pool = ThreadPool(50)
+    partials_connections = pool.imap_unordered(parse_cisjr, [folder + os.sep + a for a in os.listdir(folder)])
+    pool.close()
+    counter = 0
+    for partial_connections in partials_connections:
+        counter += 1
+        if (counter % 100 == 0):
+            print(counter)
+            if counter == 300:
+                break
         for stationName in partial_connections:
             if stationName not in connections:
                 connections[stationName] = []
-            for a in partial_connections[stationName]:
-                connections[stationName].append(a)
+            connections[stationName].extend(partial_connections[stationName])
     return connections
